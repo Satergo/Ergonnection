@@ -17,7 +17,7 @@ import java.util.Map;
 public record ErgoBoxCandidate(long value,
 							   Values.ErgoTree ergoTree,
 							   int creationHeight,
-							   Map<TokenId, Long> additionalTokens,
+							   Map<TokenId, Long> tokens,
 							   LinkedHashMap<ErgoBox.NonMandatoryRegisterId, Values.EvaluatedValue<SType>> additionalRegisters) implements ErgoBoxAssets {
 
 	public static ErgoBoxCandidate parseBodyWithIndexedDigests(List<TokenId> digestsInTx, SigmaByteReader sbr) {
@@ -60,14 +60,14 @@ public record ErgoBoxCandidate(long value,
 
 		out.writeUnsignedInt(creationHeight);
 
-		out.write(additionalTokens.size());
+		out.write(tokens.size());
 		if (tokensInTx != null) {
-			for (Map.Entry<TokenId, Long> entry : additionalTokens.entrySet()) {
+			for (Map.Entry<TokenId, Long> entry : tokens.entrySet()) {
 				out.writeUnsignedInt(tokensInTx.indexOf(entry.getKey()));
 				out.writeUnsignedLong(entry.getValue());
 			}
 		} else {
-			for (Map.Entry<TokenId, Long> entry : additionalTokens.entrySet()) {
+			for (Map.Entry<TokenId, Long> entry : tokens.entrySet()) {
 				out.write(entry.getKey().id());
 				out.writeUnsignedLong(entry.getValue());
 			}
@@ -84,10 +84,5 @@ public record ErgoBoxCandidate(long value,
 
 	public void serializeWithoutIndexedDigests(VLQOutputStream out) throws IOException {
 		serializeWithIndexedDigests(out, null);
-	}
-
-	@Override
-	public Map<TokenId, Long> tokens() {
-		return additionalTokens;
 	}
 }
