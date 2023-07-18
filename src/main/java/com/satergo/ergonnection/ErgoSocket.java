@@ -2,6 +2,7 @@ package com.satergo.ergonnection;
 
 import com.satergo.ergonnection.protocol.Protocol;
 import com.satergo.ergonnection.protocol.ProtocolMessage;
+import com.satergo.ergonnection.records.Feature;
 import com.satergo.ergonnection.records.Peer;
 import org.bouncycastle.jcajce.provider.digest.Blake2b;
 
@@ -12,39 +13,49 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class ErgoSocket extends Socket {
 
 	public static final byte[] MAINNET_MAGIC = { 1, 0, 2, 4 }, TESTNET_MAGIC = { 2, 0, 0, 1 };
 
+	/**
+	 * A basic feature set specifying that the state is "utxo", the client is verifying transactions, has no PoPoW suffix, and 1 block is stored.
+	 */
+	public static final List<Feature> BASIC_FEATURE_SET = Collections.singletonList(new Feature(16, new byte[] { 0, 1, 0, 1 }));
+
 	private final byte[] networkMagic;
 
-	private final Version version;
-	private final String agentName;
-	private final String peerName;
+	private final Peer self;
 
 	private Peer peer;
 	private final DataInputStream in;
 
-	public ErgoSocket(InetSocketAddress address, Version version, String agentName, String peerName, byte[] networkMagic) throws IOException {
+	/**
+	 * Creates a new socket for the mainnet
+	 *
+	 * @param address      Address to connect to
+	 * @param self         A Peer object that represent this client itself (this is the data that will be sent to the target peer)
+	 * @param networkMagic The magic bytes of this network, see {@link #MAINNET_MAGIC} and {@link #TESTNET_MAGIC}
+	 * @throws IOException socket exception
+	 */
+	public ErgoSocket(InetSocketAddress address, Peer self, byte[] networkMagic) throws IOException {
 		super(address.getAddress(), address.getPort());
-		this.version = version;
-		this.agentName = agentName;
-		this.peerName = peerName;
+		this.self = self;
 		this.networkMagic = networkMagic;
 		this.in = new DataInputStream(getInputStream());
 	}
 
 	/**
 	 * Creates a new socket for the mainnet
-	 * @param address Address to connect to
-	 * @param version The version of this client
-	 * @param agentName Agent name
-	 * @param peerName Peer name
+	 *
+	 * @param address   Address to connect to
+	 * @param self      A Peer object that represent this client itself (this is the data that will be sent to the target peer)
 	 * @throws IOException socket exception
 	 */
-	public ErgoSocket(InetSocketAddress address, Version version, String agentName, String peerName) throws IOException {
-		this(address, version, agentName, peerName, MAINNET_MAGIC);
+	public ErgoSocket(InetSocketAddress address, Peer self) throws IOException {
+		this(address, self, MAINNET_MAGIC);
 	}
 
 	private MessageListener messageListener;
@@ -85,23 +96,14 @@ public class ErgoSocket extends Socket {
 		int length = in.readInt();
 		in.skipNBytes(4); // checksum
 		byte[] bytes = in.readNBytes(length);
-		return Protocol.deserialize(code, bytes);
+		return Protocol.deserializeMessage(code, bytes);
 	}
 
 	public void sendHandshake() throws IOException {
 		try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 			 DataOutputStream out = new DataOutputStream(bytes)) {
 			VLQWriter.writeULong(out, System.currentTimeMillis());
-			StreamUTF8.writeByteLen(out, agentName);
-			out.writeByte(version.major());
-			out.writeByte(version.minor());
-			out.writeByte(version.patch());
-			StreamUTF8.writeByteLen(out, peerName);
-			out.writeByte(0); // has no public address
-			out.writeByte(1); // has 1 feature
-			out.write(16);
-			VLQWriter.writeUShort(out, 4);
-			out.write(new byte[]{0, 1, 0, 1});
+			self.serialize(out);
 			out.flush();
 			getOutputStream().write(bytes.toByteArray());
 		}

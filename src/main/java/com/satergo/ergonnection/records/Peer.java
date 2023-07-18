@@ -11,8 +11,21 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-public record Peer(String agentName, Version version, String peerName, InetSocketAddress publicAddress, List<Feature> features) implements ProtocolRecord {
+public record Peer(String agentName, String peerName, Version version, List<Feature> features,
+				   InetSocketAddress publicAddress) implements ProtocolRecord {
+
+	public Peer {
+		if (agentName.length() > 255) throw new IllegalArgumentException("agentName is too long (max 255)");
+		if (peerName.length() > 255) throw new IllegalArgumentException("peerName is too long (max 255)");
+		Objects.requireNonNull(version, "version");
+		Objects.requireNonNull(features, "features");
+	}
+
+	public Peer(String agentName, String peerName, Version version, List<Feature> features) {
+		this(agentName, peerName, version, features, null);
+	}
 
 	public boolean hasPublicAddress() {
 		return publicAddress != null;
@@ -29,7 +42,7 @@ public record Peer(String agentName, Version version, String peerName, InetSocke
 			int publicAddressLength = in.readUnsignedByte() - 4;
 			publicAddress = new InetSocketAddress(
 					InetAddress.getByAddress(in.readNBytes(publicAddressLength)),
-					// For some reason it uses u-int instead of u-short
+					// For some reason, it uses u-int instead of u-short
 					(int) VLQReader.readUInt(in)
 			);
 		}
@@ -38,7 +51,7 @@ public record Peer(String agentName, Version version, String peerName, InetSocke
 		for (int i = 0; i < featureCount; i++) {
 			features.add(Feature.deserialize(in));
 		}
-		return new Peer(agentName, version, peerName, publicAddress, Collections.unmodifiableList(features));
+		return new Peer(agentName, peerName, version, Collections.unmodifiableList(features), publicAddress);
 	}
 
 	@Override

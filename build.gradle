@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-group 'com.satergo.ergosock'
+group 'com.satergo'
 version '1.0.0'
 
 repositories {
@@ -10,7 +10,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+    api 'org.scorexfoundation:sigma-state_2.13:5.0.9'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.75'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'

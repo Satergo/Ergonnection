@@ -2,6 +2,7 @@ package com.satergo.ergonnection.protocol;
 
 import com.satergo.ergonnection.VLQReader;
 import com.satergo.ergonnection.messages.*;
+import com.satergo.ergonnection.modifiers.ErgoTransaction;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -15,12 +16,17 @@ public class Protocol {
 		T deserialize(DataInputStream in) throws IOException;
 	}
 
-	public static final Map<Integer, MessageDeserializer<?>> deserializers = new HashMap<>();
+	public interface ModifierDeserializer<T extends ProtocolModifier> {
+		T deserialize(byte[] id, byte[] bytes) throws IOException;
+	}
+
+	public static final Map<Integer, MessageDeserializer<?>> messageDeserializers = new HashMap<>();
+	public static final Map<Integer, ModifierDeserializer<?>> modifierDeserializers = new HashMap<>();
 
 	static {
-		deserializers.put(GetPeers.CODE, GetPeers::deserialize);
-		deserializers.put(Peers.CODE, Peers::deserialize);
-		deserializers.put(SyncInfoNew.CODE, in -> {
+		messageDeserializers.put(GetPeers.CODE, GetPeers::deserialize);
+		messageDeserializers.put(Peers.CODE, Peers::deserialize);
+		messageDeserializers.put(SyncInfoNew.CODE, in -> {
 			in.mark(Integer.MAX_VALUE);
 			if (VLQReader.readUShort(in) == 0 && in.readByte() == -1) {
 				in.reset();
@@ -32,16 +38,24 @@ public class Protocol {
 				return SyncInfoOld.deserialize(in);
 			}
 		});
-		deserializers.put(Inv.CODE, Inv::deserialize);
-		deserializers.put(ModifierRequest.CODE, ModifierRequest::deserialize);
-		deserializers.put(ModifierResponse.CODE, ModifierResponse::deserialize);
+		messageDeserializers.put(Inv.CODE, Inv::deserialize);
+		messageDeserializers.put(ModifierRequest.CODE, ModifierRequest::deserialize);
+		messageDeserializers.put(ModifierResponse.CODE, ModifierResponse::deserialize);
+
+		modifierDeserializers.put(ErgoTransaction.TYPE_ID, ErgoTransaction::deserialize);
 	}
 
-	public static ProtocolMessage deserialize(int code, byte[] data) throws IOException {
+	public static ProtocolMessage deserializeMessage(int code, byte[] data) throws IOException {
 		try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
-			MessageDeserializer<?> deserializer = deserializers.get(code);
-			if (deserializer == null) throw new IllegalArgumentException("Unsupported message with code " + code);
+			MessageDeserializer<?> deserializer = messageDeserializers.get(code);
+			if (deserializer == null) throw new UnsupportedOperationException("Unsupported message with code " + code);
 			return deserializer.deserialize(in);
 		}
+	}
+
+	public static ProtocolModifier deserializeModifier(int typeId, byte[] id, byte[] data) throws IOException {
+		ModifierDeserializer<?> deserializer = modifierDeserializers.get(typeId);
+		if (deserializer == null) throw new UnsupportedOperationException("Unsupported modifier with type ID " + typeId);
+		return deserializer.deserialize(id, data);
 	}
 }

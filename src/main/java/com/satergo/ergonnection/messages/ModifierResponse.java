@@ -3,7 +3,7 @@ package com.satergo.ergonnection.messages;
 import com.satergo.ergonnection.VLQReader;
 import com.satergo.ergonnection.VLQWriter;
 import com.satergo.ergonnection.protocol.ProtocolMessage;
-import com.satergo.ergonnection.records.Modifier;
+import com.satergo.ergonnection.records.RawModifier;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,27 +12,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * It is actually called "Modifier", but that would be annoying to use with the record also being called Modifier.
- */
-public record ModifierResponse(List<Modifier> modifiers) implements ProtocolMessage {
+public record ModifierResponse(List<RawModifier> rawModifiers) implements ProtocolMessage {
 
 	public static final int CODE = 33;
 
 	public static ModifierResponse deserialize(DataInputStream in) throws IOException {
+		int typeId = in.readByte();
 		int count = (int) VLQReader.readUInt(in);
-		ArrayList<Modifier> modifiers = new ArrayList<>();
+		ArrayList<RawModifier> rawModifiers = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			modifiers.add(Modifier.deserialize(in));
+			rawModifiers.add(RawModifier.deserialize(typeId, in));
 		}
-		return new ModifierResponse(Collections.unmodifiableList(modifiers));
+		return new ModifierResponse(Collections.unmodifiableList(rawModifiers));
 	}
 
 	@Override
 	public void serialize(DataOutputStream out) throws IOException {
-		VLQWriter.writeUInt(out, modifiers.size());
-		for (Modifier modifier : modifiers) {
-			modifier.serialize(out);
+		VLQWriter.writeUInt(out, rawModifiers.size());
+		for (RawModifier rawModifier : rawModifiers) {
+			rawModifier.serialize(out);
 		}
 	}
 
