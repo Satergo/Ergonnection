@@ -1,5 +1,6 @@
 package com.satergo.ergonnection;
 
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -7,44 +8,56 @@ import java.io.OutputStream;
  * @see <a href="https://en.wikipedia.org/wiki/Variable-length_quantity">Variable-length quantity on Wikipedia</a>
  * @see <a href="https://github.com/protocolbuffers/protobuf/blob/a85bbad37905e882f89973e9fa7836ff79d02024/java/core/src/main/java/com/google/protobuf/CodedOutputStream.java">protobuf/CodedOutputStream.java</a>
  */
-public class VLQWriter {
-	private VLQWriter() {}
+public class VLQOutputStream extends FilterOutputStream {
+	/**
+	 * Creates a VLQInputStream that uses the specified
+	 * underlying InputStream.
+	 *
+	 * @param out the specified input stream
+	 */
+	public VLQOutputStream(OutputStream out) {
+		super(out);
+	}
+
+	public void writeBoolean(boolean b) throws IOException {
+		out.write(b ? 1 : 0);
+	}
 
 	/**
 	 * Writes a signed short encoded with ZigZag and VLQ.
 	 * Both negative and positive values are supported, but due to ZigZag, encoding positive
-	 * values is done less efficiently than by {@link #writeUInt}.
-	 * Use {@link #writeUInt} to encode values that are positive.
+	 * values is done less efficiently than by {@link #writeUnsignedShort}.
+	 * Use {@link #writeUnsignedShort} to encode values that are always positive.
 	 *
 	 * @apiNote The resulting varint uses ZigZag encoding as well, which is more efficient at
 	 *       encoding negative values than pure VLQ.
 	 * @param x signed int
 	 */
-	public static void writeShort(OutputStream out, short x) throws IOException {
-		writeULong(out, encodeZigZagInt(x));
+	public void writeShort(short v) throws IOException {
+		writeUnsignedLong(encodeZigZagInt(v));
 	}
 
 	/**
 	 * @param x Unsigned short (0-0xFFFF) represented as int
 	 * @throws IllegalArgumentException for values not in unsigned short range
 	 */
-	public static void writeUShort(OutputStream out, int x) throws IOException {
-		if (x < 0 || x > 0xFFFF)
-			throw new IllegalArgumentException(x + " is out of unsigned short range");
-		writeUInt(out, x);
+	public void writeUnsignedShort(int v) throws IOException {
+		if (v < 0 || v > 0xFFFF)
+			throw new IllegalArgumentException(v + " is out of unsigned short range");
+		writeUnsignedInt(v);
 	}
 
 	/**
 	 * Writes a signed int encoded with ZigZag and VLQ.
 	 * Both negative and positive values are supported, but due to ZigZag, encoding positive
-	 * values is done less efficiently than by {@link #writeUInt}.
-	 * Use {@link #writeUInt} to encode values that are positive.
+	 * values is done less efficiently than by {@link #writeUnsignedInt}.
+	 * Use {@link #writeUnsignedInt} to encode values that are positive.
 	 *
 	 * @apiNote The resulting varint uses ZigZag encoding as well, which is more efficient at
 	 *       encoding negative values than pure VLQ.
 	 */
-	public static void writeInt(OutputStream out, int x) throws IOException {
-		writeULong(out, encodeZigZagInt(x));
+	public void writeInt(int v) throws IOException {
+		writeUnsignedLong(encodeZigZagInt(v));
 	}
 
 	/**
@@ -55,27 +68,27 @@ public class VLQWriter {
 	 * @param x Unsigned int (0-0xFFFFFFFF) represented as long
 	 * @throws IllegalArgumentException for values not in unsigned int range
 	 */
-	public static void writeUInt(OutputStream out, long x) throws IOException {
-		if (x < 0 || x > 0xFFFFFFFFL)
-			throw new IllegalArgumentException(x + " is out of unsigned int range");
-		writeULong(out, x);
+	public void writeUnsignedInt(long v) throws IOException {
+		if (v < 0 || v > 0xFFFFFFFFL)
+			throw new IllegalArgumentException(v + " is out of unsigned int range");
+		writeUnsignedLong(v);
 	}
 
 	/**
 	 * Writes a signed long encoded with VLQ and ZigZag.
 	 * Both negative and positive values are supported, but due to ZigZag, encoding positive
-	 * values is done less efficiently than by {@link #writeULong}.
-	 * Use {@link #writeULong} to encode values that are positive.
+	 * values is done less efficiently than by {@link #writeUnsignedLong}.
+	 * Use {@link #writeUnsignedLong} to encode values that are positive.
 	 *
 	 * @apiNote The resulting varint uses ZigZag encoding as well, which is more efficient at
 	 *       encoding negative values than pure VLQ.
 	 */
-	public static void writeLong(OutputStream out, long x) throws IOException {
-		writeULong(out, encodeZigZagLong(x));
+	public void writeLong(long v) throws IOException {
+		writeUnsignedLong(encodeZigZagLong(v));
 	}
 
 	/**
-	 * Writes a signed long value encoded with VLQ.
+	 * Writes an unsigned long value encoded with VLQ.
 	 * Both negative and positive values are supported, but only positive values are encoded
 	 * efficiently, negative values are taking a toll and use six bytes. Use {@link #writeLong}
 	 * to encode negative and positive values.
@@ -85,10 +98,10 @@ public class VLQWriter {
 	 *       If you use {@link #writeLong}, the resulting varint uses ZigZag encoding,
 	 *       which is much more efficient.
 	 */
-	public static void writeULong(OutputStream out, long x) throws IOException {
+	public void writeUnsignedLong(long v) throws IOException {
 		byte[] buffer = new byte[10];
 		int position = 0;
-		long value = x;
+		long value = v;
 		while (true) {
 			if ((value & ~0x7FL) == 0) {
 				buffer[position++] = (byte) value;
@@ -107,7 +120,7 @@ public class VLQWriter {
 	}
 
 	public static long encodeZigZagLong(final long n) {
-		// Note:  the right-shift must be arithmetic
+		// Note: the right-shift must be arithmetic
 		return (n << 1) ^ (n >> 63);
 	}
 }

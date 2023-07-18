@@ -1,11 +1,9 @@
 package com.satergo.ergonnection.messages;
 
-import com.satergo.ergonnection.VLQReader;
-import com.satergo.ergonnection.VLQWriter;
+import com.satergo.ergonnection.VLQInputStream;
+import com.satergo.ergonnection.VLQOutputStream;
 import com.satergo.ergonnection.protocol.ProtocolMessage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,9 +13,9 @@ public record Inv(int typeId, List<byte[]> elements) implements ProtocolMessage 
 
 	public static final int CODE = 55;
 
-	public static Inv deserialize(DataInputStream in) throws IOException {
+	public static Inv deserialize(VLQInputStream in) throws IOException {
 		int typeId = in.readUnsignedByte();
-		int count = (int) VLQReader.readUInt(in);
+		int count = (int) in.readUnsignedInt();
 		ArrayList<byte[]> elements = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			elements.add(in.readNBytes(32));
@@ -26,9 +24,9 @@ public record Inv(int typeId, List<byte[]> elements) implements ProtocolMessage 
 	}
 
 	@Override
-	public void serialize(DataOutputStream out) throws IOException {
+	public void serialize(VLQOutputStream out) throws IOException {
 		out.write(typeId);
-		VLQWriter.writeUInt(out, elements.size());
+		out.writeUnsignedInt(elements.size());
 		for (byte[] element : elements) {
 			out.write(element);
 		}

@@ -1,9 +1,8 @@
 package com.satergo.ergonnection.modifiers.data;
 
-import com.satergo.ergonnection.VLQWriter;
+import com.satergo.ergonnection.VLQOutputStream;
 import sigmastate.utils.SigmaByteReader;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HexFormat;
 
@@ -24,9 +23,9 @@ public record Input(byte[] id, ProverResult spendingProof) {
 				']';
 	}
 
-	public void serialize(DataOutputStream out) throws IOException {
+	public void serialize(VLQOutputStream out) throws IOException {
 		out.write(id);
-		VLQWriter.writeUShort(out, spendingProof.proof().length);
+		out.writeUnsignedShort(spendingProof.proof().length);
 		out.write(spendingProof.proof());
 		spendingProof.extension().serialize(out);
 	}

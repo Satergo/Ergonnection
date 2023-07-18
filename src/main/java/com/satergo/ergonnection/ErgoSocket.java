@@ -30,6 +30,7 @@ public class ErgoSocket extends Socket {
 	private final Peer self;
 
 	private Peer peer;
+	// Note: Using DataInputStream instead of VLQInputStream here is intentional
 	private final DataInputStream in;
 
 	/**
@@ -75,6 +76,7 @@ public class ErgoSocket extends Socket {
 
 	public void send(ProtocolMessage message) throws IOException {
 		try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+			 // Note: Using DataOutputStream instead of VLQInputStream here is intentional
 			 DataOutputStream out = new DataOutputStream(bytes)) {
 			out.write(networkMagic);
 			out.write(message.code());
@@ -101,8 +103,8 @@ public class ErgoSocket extends Socket {
 
 	public void sendHandshake() throws IOException {
 		try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-			 DataOutputStream out = new DataOutputStream(bytes)) {
-			VLQWriter.writeULong(out, System.currentTimeMillis());
+			 VLQOutputStream out = new VLQOutputStream(bytes)) {
+			out.writeUnsignedLong(System.currentTimeMillis());
 			self.serialize(out);
 			out.flush();
 			getOutputStream().write(bytes.toByteArray());
@@ -110,8 +112,9 @@ public class ErgoSocket extends Socket {
 	}
 
 	public void acceptHandshake() throws IOException {
-		long time = VLQReader.readULong(in);
-		peer = Peer.deserialize(in);
+		VLQInputStream vlqIn = new VLQInputStream(in);
+		long time = vlqIn.readUnsignedLong();
+		peer = Peer.deserialize(vlqIn);
 	}
 
 	public boolean isHandshakeReceived() { return peer != null; }

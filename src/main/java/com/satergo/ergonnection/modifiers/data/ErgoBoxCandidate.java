@@ -1,6 +1,6 @@
 package com.satergo.ergonnection.modifiers.data;
 
-import com.satergo.ergonnection.VLQWriter;
+import com.satergo.ergonnection.VLQOutputStream;
 import org.ergoplatform.ErgoBox;
 import sigmastate.SType;
 import sigmastate.Values;
@@ -9,7 +9,6 @@ import sigmastate.serialization.SigmaSerializer;
 import sigmastate.utils.SigmaByteReader;
 import sigmastate.utils.SigmaByteWriter;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,23 +53,23 @@ public record ErgoBoxCandidate(long value,
 		return new ErgoBoxCandidate(value, tree, creationHeight, tokens, registers);
 	}
 
-	public void serializeWithIndexedDigests(DataOutputStream out, List<TokenId> tokensInTx) throws IOException {
-		VLQWriter.writeULong(out, value);
+	public void serializeWithIndexedDigests(VLQOutputStream out, List<TokenId> tokensInTx) throws IOException {
+		out.writeUnsignedLong(value);
 
 		out.write(ErgoTreeSerializer.DefaultSerializer().serializeErgoTree(ergoTree));
 
-		VLQWriter.writeUInt(out, creationHeight);
+		out.writeUnsignedInt(creationHeight);
 
 		out.write(additionalTokens.size());
 		if (tokensInTx != null) {
 			for (Map.Entry<TokenId, Long> entry : additionalTokens.entrySet()) {
-				VLQWriter.writeUInt(out, tokensInTx.indexOf(entry.getKey()));
-				VLQWriter.writeULong(out, entry.getValue());
+				out.writeUnsignedInt(tokensInTx.indexOf(entry.getKey()));
+				out.writeUnsignedLong(entry.getValue());
 			}
 		} else {
 			for (Map.Entry<TokenId, Long> entry : additionalTokens.entrySet()) {
 				out.write(entry.getKey().id());
-				VLQWriter.writeULong(out, entry.getValue());
+				out.writeUnsignedLong(entry.getValue());
 			}
 		}
 
@@ -83,7 +82,7 @@ public record ErgoBoxCandidate(long value,
 		out.write(sbw.toBytes());
 	}
 
-	public void serializeWithoutIndexedDigests(DataOutputStream out) throws IOException {
+	public void serializeWithoutIndexedDigests(VLQOutputStream out) throws IOException {
 		serializeWithIndexedDigests(out, null);
 	}
 

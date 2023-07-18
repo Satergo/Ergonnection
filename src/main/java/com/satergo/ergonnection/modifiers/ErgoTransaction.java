@@ -1,7 +1,7 @@
 package com.satergo.ergonnection.modifiers;
 
-import com.satergo.ergonnection.VLQReader;
-import com.satergo.ergonnection.VLQWriter;
+import com.satergo.ergonnection.VLQInputStream;
+import com.satergo.ergonnection.VLQOutputStream;
 import com.satergo.ergonnection.modifiers.data.DataInput;
 import com.satergo.ergonnection.modifiers.data.ErgoBoxCandidate;
 import com.satergo.ergonnection.modifiers.data.Input;
@@ -11,8 +11,6 @@ import sigmastate.serialization.SigmaSerializer;
 import sigmastate.utils.SigmaByteReader;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,8 +35,8 @@ public record ErgoTransaction(byte[] id, List<Input> inputs, List<DataInput> dat
 	 * @param id optional (nullable)
 	 */
 	public static ErgoTransaction deserialize(byte[] id, byte[] data) throws IOException {
-		DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
-		int inputCount = VLQReader.readUShort(in);
+		VLQInputStream in = new VLQInputStream(new ByteArrayInputStream(data));
+		int inputCount = in.readUnsignedShort();
 		ArrayList<Input> inputs = new ArrayList<>();
 		int available = in.available();
 		SigmaByteReader sbr = SigmaSerializer.startReader(data, data.length - available);
@@ -47,20 +45,20 @@ public record ErgoTransaction(byte[] id, List<Input> inputs, List<DataInput> dat
 		}
 		in.skipBytes(available - sbr.remaining());
 
-		int dataInputCount = VLQReader.readUShort(in);
+		int dataInputCount = in.readUnsignedShort();
 		ArrayList<DataInput> dataInputs = new ArrayList<>();
 		for (int i = 0; i < dataInputCount; i++) {
 			dataInputs.add(new DataInput(in.readNBytes(32)));
 		}
 
 		// parse distinct ids of tokens in transaction outputs
-		int tokensCount = (int) VLQReader.readUInt(in);
+		int tokensCount = (int) in.readUnsignedInt();
 		ArrayList<TokenId> tokens = new ArrayList<>();
 		for (int i = 0; i < tokensCount; i++) {
 			tokens.add(new TokenId(in.readNBytes(32)));
 		}
 
-		int outputCandidatesCount = VLQReader.readUShort(in);
+		int outputCandidatesCount = in.readUnsignedShort();
 		ArrayList<ErgoBoxCandidate> outputCandidates = new ArrayList<>();
 		sbr.position_$eq(data.length - in.available());
 		for (int i = 0; i < outputCandidatesCount; i++) {
@@ -78,21 +76,21 @@ public record ErgoTransaction(byte[] id, List<Input> inputs, List<DataInput> dat
 	}
 
 	@Override
-	public void serialize(DataOutputStream out) throws IOException {
-		VLQWriter.writeUShort(out, inputs.size());
+	public void serialize(VLQOutputStream out) throws IOException {
+		out.writeUnsignedShort(inputs.size());
 		for (Input input : inputs) {
 			input.serialize(out);
 		}
-		VLQWriter.writeUShort(out, dataInputs.size());
+		out.writeUnsignedShort(dataInputs.size());
 		for (DataInput dataInput : dataInputs) {
 			out.write(dataInput.boxId());
 		}
 		List<TokenId> distinctTokenIds = outputCandidates.stream().flatMap(oc -> oc.additionalTokens().keySet().stream()).distinct().toList();
-		VLQWriter.writeUInt(out, distinctTokenIds.size());
+		out.writeUnsignedInt(distinctTokenIds.size());
 		for (TokenId distinctTokenId : distinctTokenIds) {
 			out.write(distinctTokenId.id());
 		}
-		VLQWriter.writeUShort(out, outputCandidates.size());
+		out.writeUnsignedShort(outputCandidates.size());
 		for (ErgoBoxCandidate outputCandidate : outputCandidates) {
 			outputCandidate.serializeWithIndexedDigests(out, distinctTokenIds);
 		}

@@ -1,11 +1,9 @@
 package com.satergo.ergonnection.messages;
 
-import com.satergo.ergonnection.VLQReader;
-import com.satergo.ergonnection.VLQWriter;
+import com.satergo.ergonnection.VLQInputStream;
+import com.satergo.ergonnection.VLQOutputStream;
 import com.satergo.ergonnection.protocol.ProtocolMessage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,8 +13,8 @@ public record SyncInfoOld(List<byte[]> lastHeaderIDs) implements ProtocolMessage
 
 	public static final int CODE = 65;
 
-	public static SyncInfoOld deserialize(DataInputStream in) throws IOException {
-		int count = VLQReader.readUShort(in);
+	public static SyncInfoOld deserialize(VLQInputStream in) throws IOException {
+		int count = in.readUnsignedShort();
 		ArrayList<byte[]> lastHeaderIDs = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			lastHeaderIDs.add(in.readNBytes(32));
@@ -25,8 +23,8 @@ public record SyncInfoOld(List<byte[]> lastHeaderIDs) implements ProtocolMessage
 	}
 
 	@Override
-	public void serialize(DataOutputStream out) throws IOException {
-		VLQWriter.writeUShort(out, lastHeaderIDs.size());
+	public void serialize(VLQOutputStream out) throws IOException {
+		out.writeUnsignedShort(lastHeaderIDs.size());
 		for (byte[] lastHeaderID : lastHeaderIDs) {
 			out.write(lastHeaderID);
 		}

@@ -1,11 +1,10 @@
 package com.satergo.ergonnection.protocol;
 
-import com.satergo.ergonnection.VLQReader;
+import com.satergo.ergonnection.VLQInputStream;
 import com.satergo.ergonnection.messages.*;
 import com.satergo.ergonnection.modifiers.ErgoTransaction;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +12,7 @@ import java.util.Map;
 public class Protocol {
 
 	public interface MessageDeserializer<T extends ProtocolMessage> {
-		T deserialize(DataInputStream in) throws IOException;
+		T deserialize(VLQInputStream in) throws IOException;
 	}
 
 	public interface ModifierDeserializer<T extends ProtocolModifier> {
@@ -28,7 +27,7 @@ public class Protocol {
 		messageDeserializers.put(Peers.CODE, Peers::deserialize);
 		messageDeserializers.put(SyncInfoNew.CODE, in -> {
 			in.mark(Integer.MAX_VALUE);
-			if (VLQReader.readUShort(in) == 0 && in.readByte() == -1) {
+			if (in.readUnsignedShort() == 0 && in.readByte() == -1) {
 				in.reset();
 				in.mark(0);
 				return SyncInfoNew.deserialize(in);
@@ -46,7 +45,7 @@ public class Protocol {
 	}
 
 	public static ProtocolMessage deserializeMessage(int code, byte[] data) throws IOException {
-		try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
+		try (VLQInputStream in = new VLQInputStream(new ByteArrayInputStream(data))) {
 			MessageDeserializer<?> deserializer = messageDeserializers.get(code);
 			if (deserializer == null) throw new UnsupportedOperationException("Unsupported message with code " + code);
 			return deserializer.deserialize(in);

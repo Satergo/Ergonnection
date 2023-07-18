@@ -1,10 +1,11 @@
 package com.satergo.ergonnection.records;
 
-import com.satergo.ergonnection.*;
+import com.satergo.ergonnection.StreamUTF8;
+import com.satergo.ergonnection.VLQInputStream;
+import com.satergo.ergonnection.VLQOutputStream;
+import com.satergo.ergonnection.Version;
 import com.satergo.ergonnection.protocol.ProtocolRecord;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -31,7 +32,7 @@ public record Peer(String agentName, String peerName, Version version, List<Feat
 		return publicAddress != null;
 	}
 
-	public static Peer deserialize(DataInputStream in) throws IOException {
+	public static Peer deserialize(VLQInputStream in) throws IOException {
 		String agentName = StreamUTF8.readByteLen(in);
 		Version version = Version.parse(in.readByte() + "." + in.readByte() + "." + in.readByte());
 		String peerName = StreamUTF8.readByteLen(in);
@@ -43,7 +44,7 @@ public record Peer(String agentName, String peerName, Version version, List<Feat
 			publicAddress = new InetSocketAddress(
 					InetAddress.getByAddress(in.readNBytes(publicAddressLength)),
 					// For some reason, it uses u-int instead of u-short
-					(int) VLQReader.readUInt(in)
+					(int) in.readUnsignedInt()
 			);
 		}
 		ArrayList<Feature> features = new ArrayList<>();
@@ -55,7 +56,7 @@ public record Peer(String agentName, String peerName, Version version, List<Feat
 	}
 
 	@Override
-	public void serialize(DataOutputStream out) throws IOException {
+	public void serialize(VLQOutputStream out) throws IOException {
 		StreamUTF8.writeByteLen(out, agentName);
 		out.write(version().major());
 		out.write(version().minor());
@@ -66,7 +67,7 @@ public record Peer(String agentName, String peerName, Version version, List<Feat
 			InetAddress address = publicAddress.getAddress();
 			out.write(address.getAddress().length + 4);
 			out.write(address.getAddress());
-			VLQWriter.writeUInt(out, publicAddress.getPort());
+			out.writeUnsignedInt(publicAddress.getPort());
 		}
 		out.write(features.size());
 		for (Feature feature : features) {

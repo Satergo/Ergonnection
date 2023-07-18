@@ -1,9 +1,10 @@
 package com.satergo.ergonnection.protocol;
 
-import java.io.DataOutputStream;
+import com.satergo.ergonnection.VLQOutputStream;
+
 import java.io.IOException;
 
 public interface ProtocolRecord {
 
-	void serialize(DataOutputStream out) throws IOException;
+	void serialize(VLQOutputStream out) throws IOException;
 }

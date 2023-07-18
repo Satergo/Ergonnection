@@ -1,23 +1,21 @@
 package com.satergo.ergonnection.records;
 
+import com.satergo.ergonnection.VLQInputStream;
+import com.satergo.ergonnection.VLQOutputStream;
 import com.satergo.ergonnection.protocol.ProtocolRecord;
-import com.satergo.ergonnection.VLQReader;
-import com.satergo.ergonnection.VLQWriter;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 public record Feature(int id, byte[] data) implements ProtocolRecord {
 
-	public static Feature deserialize(DataInputStream in) throws IOException {
-		return new Feature(in.readUnsignedByte(), in.readNBytes(VLQReader.readUShort(in)));
+	public static Feature deserialize(VLQInputStream in) throws IOException {
+		return new Feature(in.readUnsignedByte(), in.readNBytes(in.readUnsignedShort()));
 	}
 
 	@Override
-	public void serialize(DataOutputStream out) throws IOException {
+	public void serialize(VLQOutputStream out) throws IOException {
 		out.write(id);
-		VLQWriter.writeUShort(out, data.length);
+		out.writeUnsignedShort(data.length);
 		out.write(data);
 	}
 }
