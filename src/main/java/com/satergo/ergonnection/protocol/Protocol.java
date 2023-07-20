@@ -3,6 +3,7 @@ package com.satergo.ergonnection.protocol;
 import com.satergo.ergonnection.VLQInputStream;
 import com.satergo.ergonnection.messages.*;
 import com.satergo.ergonnection.modifiers.ErgoTransaction;
+import com.satergo.ergonnection.modifiers.Header;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -42,6 +43,7 @@ public class Protocol {
 		messageDeserializers.put(ModifierResponse.CODE, ModifierResponse::deserialize);
 
 		modifierDeserializers.put(ErgoTransaction.TYPE_ID, ErgoTransaction::deserialize);
+		modifierDeserializers.put(Header.TYPE_ID, Header::deserialize);
 	}
 
 	public static ProtocolMessage deserializeMessage(int code, byte[] data) throws IOException {
