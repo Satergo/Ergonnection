@@ -85,7 +85,7 @@ public record ErgoTransaction(byte[] id, List<Input> inputs, List<DataInput> dat
 		for (DataInput dataInput : dataInputs) {
 			out.write(dataInput.boxId());
 		}
-		List<TokenId> distinctTokenIds = outputCandidates.stream().flatMap(oc -> oc.additionalTokens().keySet().stream()).distinct().toList();
+		List<TokenId> distinctTokenIds = outputCandidates.stream().flatMap(oc -> oc.tokens().keySet().stream()).distinct().toList();
 		out.writeUnsignedInt(distinctTokenIds.size());
 		for (TokenId distinctTokenId : distinctTokenIds) {
 			out.write(distinctTokenId.id());
