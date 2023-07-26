@@ -1,6 +1,6 @@
 # Ergonnection
 
-Ergonnection is a Java library to communicate with nodes of the [Ergo](https://ergoplatform.com/) network.
+Ergonnection is a Java 17+ library for communicating with nodes of the [Ergo](https://ergoplatform.com/) network.
 
 ## Roadmap
 
@@ -51,10 +51,16 @@ while (true) {
 ### Example: Transactions
 Listen for transactions sent to the network: [TransactionLoggerExample.java](/examples/TransactionLoggerExample.java).
 
-## Note
+## Notes
 
 Please understand that ergonnection is only a networking library.
-This means that the transactions you receive using this tool could very well be faked.
-The blockchain is not saved and nothing is checked.
+This means that the transactions you receive using this tool could be faked.
 For this reason, unless you do this verification yourself,
 only connect to nodes that you own if you want to guarantee correct data.
+The blockchain is not saved and nothing is checked.
+
+Note that if you only intend to receive messages and not do anything, you will be disconnected
+after 10 minutes by the other peer. For this reason, make sure to not remain inactive for 10 minutes.
+
+Also note that the other peer could disconnect you (peer eviction), so make sure to set up
+auto-reconnection logic if you intend to stay connected for a long amount of time.
