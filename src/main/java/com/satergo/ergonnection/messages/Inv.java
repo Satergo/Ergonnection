@@ -18,7 +18,7 @@ public record Inv(int typeId, List<byte[]> elements) implements ProtocolMessage 
 		int count = (int) in.readUnsignedInt();
 		ArrayList<byte[]> elements = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			elements.add(in.readNBytes(32));
+			elements.add(in.readNFully(32));
 		}
 		return new Inv(typeId, Collections.unmodifiableList(elements));
 	}

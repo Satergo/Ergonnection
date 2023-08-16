@@ -1,6 +1,6 @@
 package com.satergo.ergonnection.records;
 
-import com.satergo.ergonnection.StreamUTF8;
+import com.satergo.ergonnection.InternalStreamUtils;
 import com.satergo.ergonnection.VLQInputStream;
 import com.satergo.ergonnection.VLQOutputStream;
 import com.satergo.ergonnection.Version;
@@ -33,16 +33,16 @@ public record Peer(String agentName, String peerName, Version version, List<Feat
 	}
 
 	public static Peer deserialize(VLQInputStream in) throws IOException {
-		String agentName = StreamUTF8.readByteLen(in);
+		String agentName = InternalStreamUtils.readUTF8ByteLen(in);
 		Version version = Version.parse(in.readByte() + "." + in.readByte() + "." + in.readByte());
-		String peerName = StreamUTF8.readByteLen(in);
+		String peerName = InternalStreamUtils.readUTF8ByteLen(in);
 		boolean hasPublicAddress = in.readBoolean();
 		InetSocketAddress publicAddress = null;
 		if (hasPublicAddress) {
 			// Protocol for some reason encodes it as length + 4
 			int publicAddressLength = in.readUnsignedByte() - 4;
 			publicAddress = new InetSocketAddress(
-					InetAddress.getByAddress(in.readNBytes(publicAddressLength)),
+					InetAddress.getByAddress(in.readNFully(publicAddressLength)),
 					// For some reason, it uses u-int instead of u-short
 					(int) in.readUnsignedInt()
 			);
@@ -57,11 +57,11 @@ public record Peer(String agentName, String peerName, Version version, List<Feat
 
 	@Override
 	public void serialize(VLQOutputStream out) throws IOException {
-		StreamUTF8.writeByteLen(out, agentName);
+		InternalStreamUtils.writeUTF8ByteLen(out, agentName);
 		out.write(version().major());
 		out.write(version().minor());
 		out.write(version().patch());
-		StreamUTF8.writeByteLen(out, peerName);
+		InternalStreamUtils.writeUTF8ByteLen(out, peerName);
 		out.writeBoolean(hasPublicAddress());
 		if (hasPublicAddress()) {
 			InetAddress address = publicAddress.getAddress();

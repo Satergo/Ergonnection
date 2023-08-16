@@ -17,7 +17,7 @@ public record SyncInfoOld(List<byte[]> lastHeaderIDs) implements ProtocolMessage
 		int count = in.readUnsignedShort();
 		ArrayList<byte[]> lastHeaderIDs = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			lastHeaderIDs.add(in.readNBytes(32));
+			lastHeaderIDs.add(in.readNFully(32));
 		}
 		return new SyncInfoOld(Collections.unmodifiableList(lastHeaderIDs));
 	}

@@ -16,15 +16,15 @@ public record AutolykosSolution(Platform.Ecp minerPubKey, Platform.Ecp oneTimePu
 
 	public static AutolykosSolution deserialize(VLQInputStream in, byte version) throws IOException {
 		if (version == 1) {
-			Platform.Ecp minerPublicKey = groupElemFromBytes(in.readNBytes(PUBLIC_KEY_LENGTH));
-			Platform.Ecp w = groupElemFromBytes(in.readNBytes(PUBLIC_KEY_LENGTH));
-			byte[] nonce = in.readNBytes(8);
+			Platform.Ecp minerPublicKey = groupElemFromBytes(in.readNFully(PUBLIC_KEY_LENGTH));
+			Platform.Ecp w = groupElemFromBytes(in.readNFully(PUBLIC_KEY_LENGTH));
+			byte[] nonce = in.readNFully(8);
 			int dBytesLength = in.readUnsignedByte();
-			BigInteger d = BigIntegers.fromUnsignedByteArray(in.readNBytes(dBytesLength));
+			BigInteger d = BigIntegers.fromUnsignedByteArray(in.readNFully(dBytesLength));
 			return new AutolykosSolution(minerPublicKey, w, nonce, d);
 		} else {
-			Platform.Ecp minerPublicKey = groupElemFromBytes(in.readNBytes(PUBLIC_KEY_LENGTH));
-			byte[] nonce = in.readNBytes(8);
+			Platform.Ecp minerPublicKey = groupElemFromBytes(in.readNFully(PUBLIC_KEY_LENGTH));
+			byte[] nonce = in.readNFully(8);
 			return new AutolykosSolution(minerPublicKey, CryptoConstants.dlogGroup().generator(), nonce, BigInteger.ZERO);
 		}
 	}

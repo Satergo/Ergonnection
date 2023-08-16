@@ -18,7 +18,7 @@ public record ModifierRequest(int typeId, List<byte[]> elements) implements Prot
 		int count = (int) in.readUnsignedInt();
 		ArrayList<byte[]> elements = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			elements.add(in.readNBytes(32));
+			elements.add(in.readNFully(32));
 		}
 		return new ModifierRequest(typeId, Collections.unmodifiableList(elements));
 	}

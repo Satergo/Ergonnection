@@ -9,7 +9,7 @@ import java.io.IOException;
 public record Feature(int id, byte[] data) implements ProtocolRecord {
 
 	public static Feature deserialize(VLQInputStream in) throws IOException {
-		return new Feature(in.readUnsignedByte(), in.readNBytes(in.readUnsignedShort()));
+		return new Feature(in.readUnsignedByte(), in.readNFully(in.readUnsignedShort()));
 	}
 
 	@Override

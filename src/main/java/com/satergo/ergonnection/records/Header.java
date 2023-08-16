@@ -9,7 +9,7 @@ import java.io.IOException;
 public record Header(byte[] bytes) implements ProtocolRecord {
 
 	public static Header deserialize(VLQInputStream in) throws IOException {
-		return new Header(in.readNBytes(in.readUnsignedShort()));
+		return new Header(in.readNFully(in.readUnsignedShort()));
 	}
 
 	@Override

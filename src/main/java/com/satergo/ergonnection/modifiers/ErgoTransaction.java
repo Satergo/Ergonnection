@@ -48,14 +48,14 @@ public record ErgoTransaction(byte[] id, List<Input> inputs, List<DataInput> dat
 		int dataInputCount = in.readUnsignedShort();
 		ArrayList<DataInput> dataInputs = new ArrayList<>();
 		for (int i = 0; i < dataInputCount; i++) {
-			dataInputs.add(new DataInput(in.readNBytes(32)));
+			dataInputs.add(new DataInput(in.readNFully(32)));
 		}
 
 		// parse distinct ids of tokens in transaction outputs
 		int tokensCount = (int) in.readUnsignedInt();
 		ArrayList<TokenId> tokens = new ArrayList<>();
 		for (int i = 0; i < tokensCount; i++) {
-			tokens.add(new TokenId(in.readNBytes(32)));
+			tokens.add(new TokenId(in.readNFully(32)));
 		}
 
 		int outputCandidatesCount = in.readUnsignedShort();

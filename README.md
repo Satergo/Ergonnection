@@ -51,6 +51,12 @@ while (true) {
 ### Example: Transactions
 Listen for transactions sent to the network: [TransactionLoggerExample.java](/examples/TransactionLoggerExample.java).
 
+### Testnet
+If you want to connect to a testnet node instead, you need to provide the magic bytes for that like this:
+```java
+ErgoSocket ergoSocket = new ErgoSocket(address, self, ErgoSocket.TESTNET_MAGIC);
+```
+
 ## Notes
 
 Please understand that ergonnection is only a networking library.

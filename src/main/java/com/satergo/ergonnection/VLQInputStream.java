@@ -33,6 +33,12 @@ public class VLQInputStream extends FilterInputStream {
 		}
 	}
 
+	public byte[] readNFully(int length) throws IOException {
+		byte[] bytes = new byte[length];
+		readFully(bytes);
+		return bytes;
+	}
+
 	public int skipBytes(int n) throws IOException {
 		int total = 0;
 		int cur;

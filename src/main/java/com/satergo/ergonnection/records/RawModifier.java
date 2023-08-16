@@ -1,5 +1,6 @@
 package com.satergo.ergonnection.records;
 
+import com.satergo.ergonnection.InternalStreamUtils;
 import com.satergo.ergonnection.VLQInputStream;
 import com.satergo.ergonnection.VLQOutputStream;
 import com.satergo.ergonnection.protocol.ProtocolRecord;
@@ -13,7 +14,7 @@ public record RawModifier(int typeId, byte[] id, byte[] object) implements Proto
 	}
 
 	public static RawModifier deserialize(int typeId, VLQInputStream in) throws IOException {
-		return new RawModifier(typeId, in.readNBytes(32), in.readNBytes((int) in.readUnsignedInt()));
+		return new RawModifier(typeId, in.readNFully(32), in.readNFully((int) in.readUnsignedInt()));
 	}
 
 	@Override

@@ -21,16 +21,16 @@ public record Header(byte[] id, byte version, byte[] parentId, byte[] adProofsRo
 	public static Header deserialize(byte[] id, byte[] data) throws IOException {
 		VLQInputStream in = new VLQInputStream(new ByteArrayInputStream(data));
 		byte version = in.readByte();
-		byte[] parentId = in.readNBytes(32);
-		byte[] adProofsRoot = in.readNBytes(32);
-		byte[] transactionsRoot = in.readNBytes(32);
-		byte[] stateRoot = in.readNBytes(33);
+		byte[] parentId = in.readNFully(32);
+		byte[] adProofsRoot = in.readNFully(32);
+		byte[] transactionsRoot = in.readNFully(32);
+		byte[] stateRoot = in.readNFully(33);
 		long timestamp = in.readUnsignedLong();
-		byte[] extensionHash = in.readNBytes(32);
-		byte[] nBitsBytes = in.readNBytes(4);
+		byte[] extensionHash = in.readNFully(32);
+		byte[] nBitsBytes = in.readNFully(4);
 		long nBits = ((nBitsBytes[0] & 0xFFL) << 24) | ((nBitsBytes[1] & 0xFFL) << 16) | ((nBitsBytes[2] & 0xFFL) << 8) | (nBitsBytes[3] & 0xFFL);
 		int height = Math.toIntExact(in.readUnsignedInt());
-		byte[] votes = in.readNBytes(3);
+		byte[] votes = in.readNFully(3);
 		if (version > INITIAL_VERSION) {
 			int newFieldsSize = in.readUnsignedByte();
 			in.skipNBytes(newFieldsSize);

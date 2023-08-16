@@ -6,19 +6,17 @@ import com.satergo.ergonnection.records.Feature;
 import com.satergo.ergonnection.records.Peer;
 import org.bouncycastle.jcajce.provider.digest.Blake2b;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class ErgoSocket extends Socket {
 
-	public static final byte[] MAINNET_MAGIC = { 1, 0, 2, 4 }, TESTNET_MAGIC = { 2, 0, 0, 1 };
+	public static final byte[] MAINNET_MAGIC = { 1, 0, 2, 4 }, TESTNET_MAGIC = { 2, 0, 2, 3 };
 
 	/**
 	 * A basic feature set specifying that the state is "utxo", the client is verifying transactions, has no PoPoW suffix, and 1 block is stored.
@@ -34,10 +32,10 @@ public class ErgoSocket extends Socket {
 	private final DataInputStream in;
 
 	/**
-	 * Creates a new socket for the mainnet
+	 * Creates a new socket
 	 *
 	 * @param address      Address to connect to
-	 * @param self         A Peer object that represent this client itself (this is the data that will be sent to the target peer)
+	 * @param self         A Peer object that represents this client itself (this is the data that will be sent to the target peer)
 	 * @param networkMagic The magic bytes of this network, see {@link #MAINNET_MAGIC} and {@link #TESTNET_MAGIC}
 	 * @throws IOException socket exception
 	 */
@@ -52,7 +50,7 @@ public class ErgoSocket extends Socket {
 	 * Creates a new socket for the mainnet
 	 *
 	 * @param address   Address to connect to
-	 * @param self      A Peer object that represent this client itself (this is the data that will be sent to the target peer)
+	 * @param self      A Peer object that represents this client itself (this is the data that will be sent to the target peer)
 	 * @throws IOException socket exception
 	 */
 	public ErgoSocket(InetSocketAddress address, Peer self) throws IOException {
@@ -90,15 +88,27 @@ public class ErgoSocket extends Socket {
 		}
 	}
 
+	/**
+	 * @throws SocketException if the socket is closed, or it was closed while the message was being read
+	 */
 	public ProtocolMessage acceptMessage() throws IOException {
-		byte[] magic = in.readNBytes(4);
-		if (!Arrays.equals(networkMagic, magic))
-			throw new IllegalArgumentException("incorrect magic " + Arrays.toString(magic) + " (must be " + Arrays.toString(networkMagic) + ")");
-		int code = in.readUnsignedByte();
-		int length = in.readInt();
-		in.skipNBytes(4); // checksum
-		byte[] bytes = in.readNBytes(length);
-		return Protocol.deserializeMessage(code, bytes);
+		try {
+			byte[] magic = InternalStreamUtils.readNFully(in, 4);
+			if (!Arrays.equals(networkMagic, magic)) {
+				close();
+				throw new IllegalArgumentException("Incorrect magic " + Arrays.toString(magic) + " received (must be " + Arrays.toString(networkMagic) + ")");
+			}
+			int code = in.readUnsignedByte();
+			int length = in.readInt();
+			in.skipNBytes(4); // checksum
+			byte[] bytes = InternalStreamUtils.readNFully(in, length);
+			return Protocol.deserializeMessage(code, bytes);
+		} catch (EOFException e) {
+			// Receiving this exception is due to the socket being closed, but it will not have
+			// been marked as such so this method is called
+			close();
+			throw new SocketException("Socket is closed");
+		}
 	}
 
 	public void sendHandshake() throws IOException {
